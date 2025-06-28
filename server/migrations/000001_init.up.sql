@@ -10,6 +10,7 @@ CREATE TABLE users (
     email TEXT UNIQUE NOT NULL,
     name TEXT NOT NULL,
     role TEXT NOT NULL,
+    password_hash TEXT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -35,3 +36,6 @@ CREATE TABLE messages (
     content TEXT NOT NULL,
     sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Insert a default tenant
+INSERT INTO tenants (id, name) VALUES (gen_random_uuid(), 'Default Tenant');

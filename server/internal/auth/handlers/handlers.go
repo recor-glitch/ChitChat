@@ -1,9 +1,8 @@
 package handlers
 
 import (
-	"net/http"
-
 	"ChitChat/internal/shared/application/service/auth"
+	"net/http"
 	"os"
 	"time"
 
@@ -12,85 +11,12 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-// Test Route
-func TestRoute(c *gin.Context) {
-	c.String(http.StatusOK, "Welcome to ChitChat!")
-}
-
-// Health Check
-func HealthCheck(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"status": "healthy"})
-}
-
-// Public Info
-func GetPublicInfo(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"message": "Public information"})
-}
-
-// User Handlers
-func CreateUser(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"message": "User created"})
-}
-
-func GetUserByEmail(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"message": "User found by email"})
-}
-
-func GetUserByID(c *gin.Context) {
-	id := c.Param("id")
-	c.JSON(http.StatusOK, gin.H{"message": "User found", "id": id})
-}
-
-func UpdateUser(c *gin.Context) {
-	id := c.Param("id")
-	c.JSON(http.StatusOK, gin.H{"message": "User updated", "id": id})
-}
-
-func DeleteUser(c *gin.Context) {
-	id := c.Param("id")
-	c.JSON(http.StatusOK, gin.H{"message": "User deleted", "id": id})
-}
-
-// Chat Handlers
-func GetChatRooms(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"message": "Chat rooms retrieved"})
-}
-
-func CreateChatRoom(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"message": "Chat room created"})
-}
-
-func GetMessagesByRoom(c *gin.Context) {
-	roomID := c.Param("id")
-	c.JSON(http.StatusOK, gin.H{"message": "Messages retrieved", "room_id": roomID})
-}
-
-func SendMessage(c *gin.Context) {
-	roomID := c.Param("id")
-	c.JSON(http.StatusOK, gin.H{"message": "Message sent", "room_id": roomID})
-}
-
-// Admin Handlers
-func GetAllUsers(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"message": "All users retrieved"})
-}
-
-func DeleteUserByAdmin(c *gin.Context) {
-	id := c.Param("id")
-	c.JSON(http.StatusOK, gin.H{"message": "User deleted by admin", "id": id})
-}
-
-func GetSystemStats(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"message": "System stats retrieved"})
-}
-
-// Auth Handlers
 func Signup(c *gin.Context) {
 	var req struct {
 		Username string `json:"username"`
 		Password string `json:"password"`
 	}
-	if err := c.ShouldBindJSON(&req); err != nil {
+	if err := c.ShouldBindJSON(&req); err != nil {	
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
 		return
 	}

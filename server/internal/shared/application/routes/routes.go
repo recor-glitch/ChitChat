@@ -1,9 +1,12 @@
 package routes
 
 import (
-	"ChitChat/internal/shared/application/routes/auth"
-	"ChitChat/internal/shared/application/routes/handlers"
-	"ChitChat/internal/shared/application/routes/middleware"
+	adminroutes "ChitChat/internal/admin/routes"
+	authroutes "ChitChat/internal/auth/routes"
+	chatroutes "ChitChat/internal/chat/routes"
+	"ChitChat/internal/shared/application/middleware"
+	"ChitChat/internal/shared/handlers"
+	userroutes "ChitChat/internal/user/routes"
 
 	"github.com/gin-gonic/gin"
 )
@@ -16,34 +19,16 @@ func SetupRoutes(r *gin.Engine) {
 	r.GET("/", handlers.TestRoute)
 
 	// AUTH ROUTES (Public)
-	auth.SetupAuthRoutes(r)
+	authroutes.SetupAuthRoutes(r)
 
 	// USER ROUTES (Public)
-	r.POST("/user", handlers.CreateUser)
-	r.POST("/get-by-email", handlers.GetUserByEmail)
-
-	// USER ROUTES (Authenticated)
-	userAuthRoute := r.Group("/user")
-	userAuthRoute.Use(middleware.JWTAuth())
-	userAuthRoute.GET("/:id", handlers.GetUserByID)
-	userAuthRoute.PATCH("/:id", handlers.UpdateUser)
-	userAuthRoute.DELETE("/:id", handlers.DeleteUser)
+	userroutes.SetupUserRoutes(r)
 
 	// CHAT ROUTES (Authenticated)
-	chatAuthRoute := r.Group("/chat")
-	chatAuthRoute.Use(middleware.JWTAuth())
-	chatAuthRoute.GET("/rooms", handlers.GetChatRooms)
-	chatAuthRoute.POST("/rooms", handlers.CreateChatRoom)
-	chatAuthRoute.GET("/rooms/:id/messages", handlers.GetMessagesByRoom)
-	chatAuthRoute.POST("/rooms/:id/messages", handlers.SendMessage)
+	chatroutes.SetupChatRoutes(r)
 
 	// ADMIN ROUTES (Admin Only)
-	adminAuthRoute := r.Group("/admin")
-	adminAuthRoute.Use(middleware.JWTAuth())
-	adminAuthRoute.Use(middleware.AdminAuthMiddleware())
-	adminAuthRoute.GET("/users", handlers.GetAllUsers)
-	adminAuthRoute.DELETE("/users/:id", handlers.DeleteUserByAdmin)
-	adminAuthRoute.GET("/stats", handlers.GetSystemStats)
+	adminroutes.SetupAdminRoutes(r)
 
 	// PUBLIC ROUTES
 	r.GET("/health", handlers.HealthCheck)
