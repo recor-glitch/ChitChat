@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ChitChat WebSocket Test</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      .container {
+        display: flex;
+        gap: 20px;
+      }
+      .panel {
+        flex: 1;
+        border: 1px solid #ccc;
+        padding: 15px;
+        border-radius: 5px;
+      }
+      .message {
+        background: #f0f0f0;
+        padding: 10px;
+        margin: 5px 0;
+        border-radius: 3px;
+      }
+      .message.sent {
+        background: #d4edda;
+        text-align: right;
+      }
+      .message.received {
+        background: #d1ecf1;
+      }
+      .status {
+        padding: 10px;
+        margin: 10px 0;
+        border-radius: 3px;
+      }
+      .status.connected {
+        background: #d4edda;
+        color: #155724;
+      }
+      .status.disconnected {
+        background: #f8d7da;
+        color: #721c24;
+      }
+      input,
+      button {
+        margin: 5px 0;
+        padding: 8px;
+      }
+      button {
+        background: #007bff;
+        color: white;
+        border: none;
+        border-radius: 3px;
+        cursor: pointer;
+      }
+      button:hover {
+        background: #0056b3;
+      }
+      button:disabled {
+        background: #6c757d;
+        cursor: not-allowed;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>ChitChat WebSocket Test</h1>
+
+    <div class="container">
+      <div class="panel">
+        <h3>Connection</h3>
+        <div id="status" class="status disconnected">Disconnected</div>
+        <input
+          type="text"
+          id="token"
+          placeholder="JWT Token"
+          style="width: 100%"
+        />
+        <button onclick="connect()">Connect</button>
+        <button onclick="disconnect()" disabled id="disconnectBtn">
+          Disconnect
+        </button>
+
+        <h3>Room Management</h3>
+        <input type="text" id="roomId" placeholder="Room ID" />
+        <button onclick="subscribe()" id="subscribeBtn" disabled>
+          Subscribe
+        </button>
+        <button onclick="unsubscribe()" id="unsubscribeBtn" disabled>
+          Unsubscribe
+        </button>
+
+        <h3>Send Message</h3>
+        <input type="text" id="messageContent" placeholder="Message content" />
+        <button onclick="sendMessage()" id="sendBtn" disabled>
+          Send Message
+        </button>
+      </div>
+
+      <div class="panel">
+        <h3>Messages</h3>
+        <div id="messages"></div>
+      </div>
+    </div>
+
+    <script>
+      let ws = null;
+      let currentRoom = null;
+
+      function connect() {
+        const token = document.getElementById("token").value;
+        if (!token) {
+          alert("Please enter a JWT token");
+          return;
+        }
+
+        // Connect to WebSocket with token
+        ws = new WebSocket(
+          `ws://localhost:4000/chat/ws?token=${encodeURIComponent(token)}`
+        );
+
+        ws.onopen = function () {
+          updateStatus("Connected", true);
+          document.getElementById("disconnectBtn").disabled = false;
+          document.getElementById("subscribeBtn").disabled = false;
+          document.getElementById("sendBtn").disabled = false;
+        };
+
+        ws.onmessage = function (event) {
+          const message = JSON.parse(event.data);
+          handleMessage(message);
+        };
+
+        ws.onclose = function () {
+          updateStatus("Disconnected", false);
+          document.getElementById("disconnectBtn").disabled = true;
+          document.getElementById("subscribeBtn").disabled = true;
+          document.getElementById("unsubscribeBtn").disabled = true;
+          document.getElementById("sendBtn").disabled = true;
+        };
+
+        ws.onerror = function (error) {
+          console.error("WebSocket error:", error);
+          updateStatus("Error", false);
+        };
+      }
+
+      function disconnect() {
+        if (ws) {
+          ws.close();
+        }
+      }
+
+      function subscribe() {
+        const roomId = document.getElementById("roomId").value;
+        if (!roomId) {
+          alert("Please enter a room ID");
+          return;
+        }
+
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(
+            JSON.stringify({
+              type: "subscribe",
+              content: roomId,
+            })
+          );
+          currentRoom = roomId;
+          document.getElementById("unsubscribeBtn").disabled = false;
+        }
+      }
+
+      function unsubscribe() {
+        if (currentRoom && ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(
+            JSON.stringify({
+              type: "unsubscribe",
+              content: currentRoom,
+            })
+          );
+          currentRoom = null;
+          document.getElementById("unsubscribeBtn").disabled = true;
+        }
+      }
+
+      function sendMessage() {
+        const content = document.getElementById("messageContent").value;
+        if (!content) {
+          alert("Please enter a message");
+          return;
+        }
+
+        if (!currentRoom) {
+          alert("Please subscribe to a room first");
+          return;
+        }
+
+        // Send message via REST API (WebSocket is for receiving)
+        const token = document.getElementById("token").value;
+        fetch(`http://localhost:4000/chat/rooms/${currentRoom}/messages`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            content: content,
+          }),
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.message) {
+              addMessage("Sent: " + content, "sent");
+              document.getElementById("messageContent").value = "";
+            } else {
+              alert("Error sending message: " + JSON.stringify(data));
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+            alert("Error sending message");
+          });
+      }
+
+      function handleMessage(message) {
+        switch (message.type) {
+          case "new_message":
+            addMessage(`Received: ${message.content.content}`, "received");
+            break;
+          case "subscribed":
+            addMessage(
+              `Subscribed to room: ${message.content.room_id}`,
+              "system"
+            );
+            break;
+          case "unsubscribed":
+            addMessage(
+              `Unsubscribed from room: ${message.content.room_id}`,
+              "system"
+            );
+            break;
+          case "error":
+            addMessage(`Error: ${message.content.message}`, "error");
+            break;
+          case "pong":
+            addMessage(
+              `Pong received at: ${message.content.timestamp}`,
+              "system"
+            );
+            break;
+          default:
+            addMessage(`Unknown message type: ${message.type}`, "system");
+        }
+      }
+
+      function addMessage(text, type) {
+        const messagesDiv = document.getElementById("messages");
+        const messageDiv = document.createElement("div");
+        messageDiv.className = `message ${type}`;
+        messageDiv.textContent = text;
+        messagesDiv.appendChild(messageDiv);
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+      }
+
+      function updateStatus(text, connected) {
+        const statusDiv = document.getElementById("status");
+        statusDiv.textContent = text;
+        statusDiv.className = `status ${
+          connected ? "connected" : "disconnected"
+        }`;
+      }
+
+      function getUserIdFromToken(token) {
+        // This is a simple implementation - in production, you'd decode the JWT properly
+        try {
+          const payload = JSON.parse(atob(token.split(".")[1]));
+          return payload.user_id;
+        } catch (e) {
+          console.error("Error parsing token:", e);
+          return "unknown";
+        }
+      }
+
+      // Auto-ping to keep connection alive
+      setInterval(() => {
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(
+            JSON.stringify({
+              type: "ping",
+            })
+          );
+        }
+      }, 30000); // Ping every 30 seconds
+    </script>
+  </body>
+</html>

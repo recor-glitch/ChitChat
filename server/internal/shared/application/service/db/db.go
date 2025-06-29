@@ -12,7 +12,7 @@ var db *pgxpool.Pool
 func InitDB() error {
 	connStr := os.Getenv("DATABASE_URL")
 	if connStr == "" {
-		connStr = "postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable"
+		connStr = "postgres://user:password@localhost:5432/chitchat?sslmode=disable"
 	}
 	var err error
 	db, err = pgxpool.New(context.Background(), connStr)
