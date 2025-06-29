@@ -13,10 +13,10 @@ import (
 
 func Signup(c *gin.Context) {
 	var req struct {
-		Username string `json:"username"`
+		Email    string `json:"email"`
 		Password string `json:"password"`
 	}
-	if err := c.ShouldBindJSON(&req); err != nil {	
+	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
 		return
 	}
@@ -25,14 +25,15 @@ func Signup(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to hash password"})
 		return
 	}
-	_, err = auth.CreateUser(req.Username, string(hash))
+	user, err := auth.CreateUser(req.Email, string(hash))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"username": req.Username,
-		"exp":      time.Now().Add(time.Hour * 72).Unix(),
+		"user_id": user.ID,
+		"email":   req.Email,
+		"exp":     time.Now().Add(time.Hour * 72).Unix(),
 	})
 	jwtSecret := []byte(os.Getenv("JWT_SECRET"))
 	if len(jwtSecret) == 0 {
@@ -65,6 +66,7 @@ func Signin(c *gin.Context) {
 		return
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"user_id":  user.ID,
 		"username": req.Username,
 		"exp":      time.Now().Add(time.Hour * 72).Unix(),
 	})

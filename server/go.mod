@@ -5,7 +5,9 @@ go 1.24.4
 require (
 	github.com/gin-contrib/cors v1.7.6
 	github.com/gin-gonic/gin v1.10.1
+	github.com/gorilla/websocket v1.5.1
 	github.com/jackc/pgx/v5 v5.7.5
+	github.com/oklog/ulid/v2 v2.1.0
 	golang.org/x/crypto v0.39.0
 )
 
@@ -42,6 +44,7 @@ require (
 
 require (
 	github.com/golang-jwt/jwt/v4 v4.5.2
+	github.com/google/uuid v1.6.0
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	golang.org/x/sys v0.33.0 // indirect
 )
