@@ -5,13 +5,15 @@ import (
 )
 
 type User struct {
-	ID           string    `json:"id" db:"id"`
-	TenantID     string    `json:"tenant_id" db:"tenant_id"`
-	Email        string    `json:"email" db:"email"`
-	Name         string    `json:"name" db:"name"`
-	Role         string    `json:"role" db:"role"`
-	PasswordHash string    `json:"-" db:"password_hash"`
-	CreatedAt    time.Time `json:"created_at" db:"created_at"`
+	ID            string    `json:"id" db:"id"`
+	TenantID      string    `json:"tenant_id" db:"tenant_id"`
+	Email         string    `json:"email" db:"email"`
+	Name          string    `json:"name" db:"name"`
+	Role          string    `json:"role" db:"role"`
+	PasswordHash  string    `json:"-" db:"password_hash"`
+	PhoneNumber   *string   `json:"phone_number,omitempty" db:"phone_number"`
+	PhoneVerified bool      `json:"phone_verified" db:"phone_verified"`
+	CreatedAt     time.Time `json:"created_at" db:"created_at"`
 }
 
 type Room struct {
@@ -49,4 +51,33 @@ type SendMessageRequest struct {
 type DirectMessageRequest struct {
 	RecipientID string `json:"recipient_id" binding:"required"`
 	Content     string `json:"content" binding:"required"`
+}
+
+type PhoneVerificationCode struct {
+	ID          string    `json:"id" db:"id"`
+	PhoneNumber string    `json:"phone_number" db:"phone_number"`
+	Code        string    `json:"code" db:"code"`
+	ExpiresAt   time.Time `json:"expires_at" db:"expires_at"`
+	Used        bool      `json:"used" db:"used"`
+	CreatedAt   time.Time `json:"created_at" db:"created_at"`
+}
+
+type PhoneAuthRequest struct {
+	PhoneNumber string `json:"phone_number" binding:"required"`
+}
+
+type PhoneVerifyRequest struct {
+	PhoneNumber string `json:"phone_number" binding:"required"`
+	Code        string `json:"code" binding:"required"`
+}
+
+type PhoneSignupRequest struct {
+	PhoneNumber string `json:"phone_number" binding:"required"`
+	Name        string `json:"name" binding:"required"`
+	Code        string `json:"code" binding:"required"`
+}
+
+type PhoneSigninRequest struct {
+	PhoneNumber string `json:"phone_number" binding:"required"`
+	Code        string `json:"code" binding:"required"`
 }
