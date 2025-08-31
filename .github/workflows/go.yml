@@ -87,6 +87,12 @@ jobs:
             --task-definition $TASK_DEFINITION_FAMILY \
             --query taskDefinition > task-definition.json
 
+      - name: Clean task definition
+        run: |
+          # Remove invalid keys that might cause issues
+          jq 'del(.enableFaultInjection, .status, .requiresAttributes, .placementConstraints, .compatibilities, .registeredAt, .registeredBy, .revision, .taskDefinitionArn)' task-definition.json > task-definition-clean.json
+          mv task-definition-clean.json task-definition.json
+
       - name: Update task definition with new image
         id: task-def
         uses: aws-actions/amazon-ecs-render-task-definition@v1
