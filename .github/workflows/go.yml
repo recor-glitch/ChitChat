@@ -60,13 +60,13 @@ jobs:
           echo "SERVICE_NAME=${{ vars.ECS_SERVICE_NAME }}" >> $GITHUB_ENV
           echo "TASK_DEFINITION_FAMILY=${{ vars.ECS_TASK_DEFINITION_FAMILY }}" >> $GITHUB_ENV
 
-      - name: Debug - List server directory contents
+      - name: Debug - List directory contents
         run: |
           echo "Current directory: $(pwd)"
-          echo "Server directory contents:"
-          ls -la ./server/
-          echo "Dockerfile contents:"
-          cat ./server/Dockerfile
+          echo "Root directory contents:"
+          ls -la ./
+          echo "DockerFile contents:"
+          cat ./DockerFile
 
       - name: Build, tag, and push Docker image
         env:
@@ -74,7 +74,7 @@ jobs:
           IMAGE_TAG: ${{ github.sha }}
         run: |
           # Build image
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG ./server
+          docker build -f DockerFile -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
           docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:latest-$ENVIRONMENT
 
           # Push images
