@@ -74,7 +74,7 @@ jobs:
           IMAGE_TAG: ${{ github.sha }}
         run: |
           # Build image
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG ./server
+          docker build -f ./server/DockerFile -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG ./server
           docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:latest-$ENVIRONMENT
 
           # Push images
