@@ -7,12 +7,13 @@ on:
       - dev
 
 env:
-  AWS_REGION: ap-south-1
-  ECR_REPOSITORY: rishi/chitchat
+  AWS_REGION: ${{ vars.AWS_REGION }}
+  ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY }}
 
 jobs:
   # test:
   #   runs-on: ubuntu-latest
+  #   environment: ${{ github.ref_name == 'main' && 'production' || 'development' }}
   #   steps:
   #   - name: Checkout code
   #     uses: actions/checkout@v4
@@ -33,9 +34,9 @@ jobs:
   #     run: npm run lint
 
   build-and-deploy:
-    # Removed invalid dependency
     runs-on: ubuntu-latest
     if: github.event_name == 'push'
+    environment: ${{ github.ref_name == 'main' && 'production' || 'production' }}
 
     steps:
       - name: Checkout code
@@ -55,17 +56,9 @@ jobs:
       - name: Set environment variables
         run: |
           echo "ENVIRONMENT=${{ github.ref_name }}" >> $GITHUB_ENV
-          if [[ "${{ github.ref_name }}" == "main" ]]; then
-            echo "CLUSTER_NAME=impressive-tiger-ojyojf" >> $GITHUB_ENV
-            echo "SERVICE_NAME=chitchat-td-service-kxfvevpw" >> $GITHUB_ENV
-            echo "TASK_DEFINITION_FAMILY=chitchat-td" >> $GITHUB_ENV
-            echo "ECR_REPOSITORY=rishi/chitchat" >> $GITHUB_ENV
-          else
-            echo "CLUSTER_NAME=impressive-tiger-ojyojf" >> $GITHUB_ENV
-            echo "SERVICE_NAME=chitchat-td-service-kxfvevpw" >> $GITHUB_ENV
-            echo "TASK_DEFINITION_FAMILY=chitchat-td" >> $GITHUB_ENV
-            echo "ECR_REPOSITORY=rishi/chitchat" >> $GITHUB_ENV
-          fi
+          echo "CLUSTER_NAME=${{ vars.ECS_CLUSTER_NAME }}" >> $GITHUB_ENV
+          echo "SERVICE_NAME=${{ vars.ECS_SERVICE_NAME }}" >> $GITHUB_ENV
+          echo "TASK_DEFINITION_FAMILY=${{ vars.ECS_TASK_DEFINITION_FAMILY }}" >> $GITHUB_ENV
 
       - name: Build, tag, and push Docker image
         env:
@@ -91,7 +84,7 @@ jobs:
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
           task-definition: task-definition.json
-          container-name: backend-container
+          container-name: ${{ vars.CONTAINER_NAME }}
           image: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
 
       - name: Deploy to Amazon ECS
