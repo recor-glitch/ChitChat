@@ -6,13 +6,13 @@ import (
 	"errors"
 )
 
-func CreateUser(username, passwordHash string) (*db.User, error) {
+func CreateUser(email, passwordHash string) (*db.User, error) {
 	row := db.GetDB().QueryRow(context.Background(),
-		`INSERT INTO users (id, email, name, role, password_hash, tenant_id) VALUES (gen_random_uuid(), $1, $1, 'user', $2, (SELECT id FROM tenants LIMIT 1)) RETURNING email, password_hash`,
-		username, passwordHash,
+		`INSERT INTO users (id, email, role, password_hash, tenant_id) VALUES (gen_random_uuid(), $1, 'user', $2, (SELECT id FROM tenants LIMIT 1)) RETURNING id, email, password_hash`,
+		email, passwordHash,
 	)
 	var user db.User
-	if err := row.Scan(&user.Username, &user.PasswordHash); err != nil {
+	if err := row.Scan(&user.ID, &user.Email, &user.PasswordHash); err != nil {
 		return nil, err
 	}
 	return &user, nil
@@ -20,11 +20,11 @@ func CreateUser(username, passwordHash string) (*db.User, error) {
 
 func FindUserByEmail(username string) (*db.User, error) {
 	row := db.GetDB().QueryRow(context.Background(),
-		`SELECT email, password_hash FROM users WHERE email=$1`,
+		`SELECT id, email, password_hash FROM users WHERE email=$1`,
 		username,
 	)
 	var user db.User
-	if err := row.Scan(&user.Username, &user.PasswordHash); err != nil {
+	if err := row.Scan(&user.ID, &user.Email, &user.PasswordHash); err != nil {
 		return nil, errors.New("user not found")
 	}
 	return &user, nil

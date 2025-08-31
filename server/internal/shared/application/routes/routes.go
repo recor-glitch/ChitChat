@@ -2,6 +2,7 @@ package routes
 
 import (
 	adminroutes "ChitChat/internal/admin/routes"
+	authhandlers "ChitChat/internal/auth/handlers"
 	authroutes "ChitChat/internal/auth/routes"
 	chatroutes "ChitChat/internal/chat/routes"
 	"ChitChat/internal/shared/application/middleware"
@@ -11,7 +12,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func SetupRoutes(r *gin.Engine) {
+func SetupRoutes(r *gin.Engine, phoneAuthHandlers *authhandlers.PhoneAuthHandlers) {
 	// CORS
 	r.Use(middleware.CORSMiddleware())
 
@@ -19,7 +20,7 @@ func SetupRoutes(r *gin.Engine) {
 	r.GET("/", handlers.TestRoute)
 
 	// AUTH ROUTES (Public)
-	authroutes.SetupAuthRoutes(r)
+	authroutes.SetupAuthRoutes(r, phoneAuthHandlers)
 
 	// USER ROUTES (Public)
 	userroutes.SetupUserRoutes(r)

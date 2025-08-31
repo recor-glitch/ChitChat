@@ -7,7 +7,7 @@ import (
 )
 
 func TestRoute(c *gin.Context) {
-	c.String(http.StatusOK, "Welcome to ChitChat!")
+	c.String(http.StatusOK, "Welcome to ChitChat version 1.0!")
 }
 
 func HealthCheck(c *gin.Context) {
