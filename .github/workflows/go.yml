@@ -1,0 +1,111 @@
+name: Deploy Backend to ECS
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+
+env:
+  AWS_REGION: ap-south-1
+  ECR_REPOSITORY: rishi/chitchat
+
+jobs:
+  # test:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #   - name: Checkout code
+  #     uses: actions/checkout@v4
+
+  #   - name: Set up Node.js
+  #     uses: actions/setup-node@v4
+  #     with:
+  #       node-version: '18'
+  #       cache: 'npm'
+
+  #   - name: Install dependencies
+  #     run: npm ci
+
+  #   - name: Run tests
+  #     run: npm test
+
+  #   - name: Run linting
+  #     run: npm run lint
+
+  build-and-deploy:
+    # Removed invalid dependency
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set environment variables
+        run: |
+          echo "ENVIRONMENT=${{ github.ref_name }}" >> $GITHUB_ENV
+          if [[ "${{ github.ref_name }}" == "main" ]]; then
+            echo "CLUSTER_NAME=impressive-tiger-ojyojf" >> $GITHUB_ENV
+            echo "SERVICE_NAME=chitchat-td-service-kxfvevpw" >> $GITHUB_ENV
+            echo "TASK_DEFINITION_FAMILY=chitchat-td" >> $GITHUB_ENV
+            echo "ECR_REPOSITORY=rishi/chitchat" >> $GITHUB_ENV
+          else
+            echo "CLUSTER_NAME=impressive-tiger-ojyojf" >> $GITHUB_ENV
+            echo "SERVICE_NAME=chitchat-td-service-kxfvevpw" >> $GITHUB_ENV
+            echo "TASK_DEFINITION_FAMILY=chitchat-td" >> $GITHUB_ENV
+            echo "ECR_REPOSITORY=rishi/chitchat" >> $GITHUB_ENV
+          fi
+
+      - name: Build, tag, and push Docker image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          # Build image
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:latest-$ENVIRONMENT
+
+          # Push images
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest-$ENVIRONMENT
+
+      - name: Download current task definition
+        run: |
+          aws ecs describe-task-definition \
+            --task-definition $TASK_DEFINITION_FAMILY \
+            --query taskDefinition > task-definition.json
+
+      - name: Update task definition with new image
+        id: task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: task-definition.json
+          container-name: backend-container
+          image: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
+
+      - name: Deploy to Amazon ECS
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        with:
+          task-definition: ${{ steps.task-def.outputs.task-definition }}
+          service: ${{ env.SERVICE_NAME }}
+          cluster: ${{ env.CLUSTER_NAME }}
+          wait-for-service-stability: true
+
+      - name: Deployment notification
+        run: |
+          echo "🚀 Deployment completed successfully!"
+          echo "Environment: $ENVIRONMENT"
+          echo "Cluster: $CLUSTER_NAME"
+          echo "Service: $SERVICE_NAME"
+          echo "Image: ${{ steps.login-ecr.outputs.registry }}/$ECR_REPOSITORY:${{ github.sha }}"
