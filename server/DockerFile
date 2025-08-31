@@ -46,4 +46,4 @@ RUN echo '#!/bin/sh' > /app/start.sh && \
 EXPOSE 4000
 
 # Run the startup script
-CMD ["/app/start.sh"]
+CMD ["/app/start.sh"] 
